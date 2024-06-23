@@ -72,8 +72,8 @@ title('Pole-Zero Map');
 clc;
 figure;
 rlocusplot(-G_am(2,1));
-grid on;
 title('Root Locus Plot');
+sgrid(0.7,[]);
 C_q_gain = -0.163; % C_q gain obtained from root locus plot for CL damping of 0.7
 linsys_cq = linearize('ClosedLoop_Cq');
 G_cl_q = ss2ss(linsys_cq,T);
