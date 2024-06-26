@@ -82,8 +82,8 @@ zpk_G_cl_q_unsc = zpk(G_cl_q_unsc);
 
 % Scaling gain Design
 C_sc_gain = 1/ dcgain(G_cl_q_unsc);
-linsys_csc = linearize("ClosedLoop_CqCsc");
-G = ss2ss(linsys_csc,T);
+linsys_cq_csc = linearize("ClosedLoop_CqCsc");
+G = ss2ss(linsys_cq_csc,T);
 G = G('y1','u_p');
 zpk_G = zpk(G);
 G_tf = tf(G);
@@ -91,6 +91,33 @@ figure;
 step(G_tf);
 grid on;
 title("Step Reponse of G");
+
+% Integral gain Design
+C_i_gain = db2mag(20); % momentary unitary value
+linsys_cq_csc_ci = linearize("ClosedLoop_CqCscCi");
+T_cq_csc_ci = [0 0 1 0 0;
+     0 0 0 1 0;
+     1 0 0 0 0;
+     0 1 0 0 0;
+     0 0 0 0 1];
+G_ol_nz = ss2ss(linsys_cq_csc_ci,T_cq_csc_ci);
+zpk_G_ol_nz = zpk(G_ol_nz);
+figure;
+bode(G_ol_nz);
+grid on;
+title("Bode Plot of G_ol_nz");
+C_i_gain = 1; % momentary unitary value
+linsys_cq_csc_ci = linearize("ClosedLoop_CqCscCi");
+T_cq_csc_ci = [0 0 1 0 0;
+     0 0 0 1 0;
+     1 0 0 0 0;
+     0 1 0 0 0;
+     0 0 0 0 1];
+G_ol_nz = ss2ss(linsys_cq_csc_ci,T_cq_csc_ci);
+sisotool(G_ol_nz);
+C_i_gain_phase = 6.2693;
+C_i_gain_settling = 5.4738;
+C_i_gain = min(C_i_gain_settling,C_i_gain_phase);
 
 %% Part #3a Weighting filters
 
