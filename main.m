@@ -120,8 +120,66 @@ C_i_gain_settling = 5.4738;
 C_i_gain = min(C_i_gain_settling,C_i_gain_phase);
 
 %% Part #3a Weighting filters
+%Weight 1 information
+dcgain_1 = db2mag(-60);
+freq_1 = 4;
+mag_1 = db2mag(-3.01);
+PM = pi/6;
+M_1 = 1/(2*sin(PM/2));
+hfgain_1 = M_1;
+
+%Weight 2 information
+dcgain_2 = db2mag(60);
+freq_2 = omega_a;
+mag_2 = db2mag(-15);
+hfgain_2 = dcgain_1;
+
+W_1_inv = makeweight(dcgain_1, [freq_1,mag_1], hfgain_1); 
+W_2_inv = makeweight(dcgain_2, [freq_2,mag_2], hfgain_2);
+
+W_1 = inv(W_1_inv);
+W_2 = inv(W_2_inv);
+
+%Recomputation of A1, A2, M1, M2, omega1 and omega2
+[numW1, denW1] = tfdata(W_1,'v');
+M1 = 1/numW1(1);
+w1 = numW1(2);
+A1 = denW1(2)/w1;
+
+[numW2, denW2] = tfdata(W_2,'v');
+M2 = denW2(1);
+w2 = denW2(2);
+A2 = w2/numW2(2);
+
+bode(W_1, W_2)
+legend('W1','W2');
+grid on;
+
+
+
+
 
 %% Part #3b Reference model
+G_zeros = zero(G);
+s = tf('s');
+z_m = G_zeros(1);
+
+M_d = 5;
+ts = 0.18;
+error = 0.1;
+w_d_correct =NaN;
+z_d_correct = NaN;
+
+%for w_d = 18:0.01:22
+%    for z_d = 0.65:0.0001:0.7
+%        T_d = (w_d^2*(-s/z_m + 1))/(s^2 + 2*z_d*w_d*s + w_d^2);
+%        if abs(stepinfo(T_d).Overshoot - max_os) <= error && abs(stepinfo(T_d).SettlingTime - ts) <= error
+%             w_d_correct = w_d;
+%             z_d_correct = z_d;
+%        end
+%    end
+%end
+
 
 %% Part #3c Feedback controller design (hinfsyn case)
 
