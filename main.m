@@ -160,25 +160,55 @@ grid on;
 
 
 %% Part #3b Reference model
-G_zeros = zero(G);
-s = tf('s');
-z_m = G_zeros(1);
+% Required constants
+z_m         = zero(G);
+z_m         = z_m(2);           % Non-minimum phase zero
 
-M_d = 5;
-ts = 0.18;
-error = 0.1;
-w_d_correct =NaN;
-z_d_correct = NaN;
+%settlingtime_des= 0.18;             % 5% settle time [sec]
+%overshoot_des  = 0.05;             % Overshoot
 
-%for w_d = 18:0.01:22
-%    for z_d = 0.65:0.0001:0.7
-%        T_d = (w_d^2*(-s/z_m + 1))/(s^2 + 2*z_d*w_d*s + w_d^2);
-%        if abs(stepinfo(T_d).Overshoot - max_os) <= error && abs(stepinfo(T_d).SettlingTime - ts) <= error
-%             w_d_correct = w_d;
-%             z_d_correct = z_d;
+% Defining ranges for omega_d and zeta_d and vars to store results
+%omega_d_range     = linspace(0.01, 100, 100);
+%zeta_d_range = linspace(0.1, 1, 100);
+
+%omega_d_refm  = 0;
+%zeta_d_refm = 0;
+%error       = inf;
+
+%Brute force to find required omega_d and zeta_d
+%for omega_d = omega_d_range
+%    for zeta_d = zeta_d_range
+%        num = omega_d^2 * [-1/z_m, 1];
+%        den = [1, 2*zeta_d*omega_d, omega_d^2];
+%        T_d = tf(num, den);
+%        
+%        info                = stepinfo(T_d, 'SettlingTimeThreshold', 0.05);
+%        settling_time_error = abs(info.SettlingTime - settlingtime_des);
+%        overshoot_error     = abs(info.Overshoot/100 - overshoot_des);
+%
+%        total_error         = settling_time_error + overshoot_error;
+%        
+%        if total_error < error
+%            error = total_error;
+%            omega_d_refm = omega_d;
+%            zeta_d_refm = zeta_d;
 %        end
 %    end
 %end
+
+
+% Updating reference model with best parameters and plotting step response
+%num = omega_d_refm^2 * [-1/z_m, 1];
+%den = [1, 2*zeta_d_refm*omega_d_refm, omega_d_refm^2];
+%T_d = zpk(tf(num, den)); 
+
+%From the brute force method we get the next zeta_d, omega_d and TF
+omega_d_refm = 18.1900;
+zeta_d_refm = 0.7000;
+num = omega_d_refm^2 * [-1/z_m, 1];
+den = [1, 2*zeta_d_refm*omega_d_refm, omega_d_refm^2];
+T_d = zpk(tf(num, den));
+
 
 
 %% Part #3c Feedback controller design (hinfsyn case)
