@@ -69,10 +69,10 @@ title('Pole-Zero Map');
 %% Part #2a Loop Shaping
 % Damping gain tuning
 clc;
-figure;
-rlocusplot(-G_am(2,1));
-title('Root Locus Plot');
-sgrid(0.7,[]);
+% figure;
+% rlocusplot(-G_am(2,1));
+% title('Root Locus Plot');
+% sgrid(0.7,[]);
 C_q_gain = -0.163; % C_q gain obtained from root locus plot for CL damping of 0.7
 linsys_cq = linearize('ClosedLoop_Cq');
 G_cl_q = ss2ss(linsys_cq,T);
@@ -87,10 +87,10 @@ G = ss2ss(linsys_cq_csc,T);
 G = G('y1','u_p');
 zpk_G = zpk(G);
 G_tf = tf(G);
-figure;
-step(G_tf);
-grid on;
-title("Step Reponse of G");
+% figure;
+% step(G_tf);
+% grid on;
+% title("Step Reponse of G");
 
 %% Part #2c Loop Shaping
 % Integral gain Design
@@ -102,7 +102,7 @@ T_cq_csc_ci = [0 0 1 0 0;
      0 1 0 0 0;
      0 0 0 0 1];
 G_ol_nz = ss2ss(linsys_cq_csc_ci,T_cq_csc_ci);
-sisotool(G_ol_nz);
+% sisotool(G_ol_nz);
 C_i_gain_phase = 6.2693;
 C_i_gain_settling = 5.4738;
 C_i_gain = min(C_i_gain_settling,C_i_gain_phase);
@@ -139,13 +139,10 @@ M2 = denW2(1);
 w2 = denW2(2);
 A2 = w2/numW2(2);
 
-bode(W_1, W_2)
-legend('W1','W2');
-grid on;
-
-
-
-
+% figure;
+% bode(W_1, W_2)
+% legend('W1','W2');
+% grid on;
 
 %% Part #3b Reference model
 % Required constants
@@ -207,34 +204,65 @@ P = [W_1 -W_1*zpk_G;
     1 -zpk_G];
 n_meas = 1;
 n_cont = 1;
-tolerance = hinfsynOptions('RelTol',1e-6);
-[C_e,T_wz,gamma] = hinfsyn(P,n_meas,n_cont,tolerance);
+hinf_options = hinfsynOptions;
+hinf_options.RelTol = 1e-6;
+[C_e,T_wz,gamma] = hinfsyn(P,n_meas,n_cont,hinf_options);
 sigma_options = sigmaoptions('cstprefs');
 sigma_options.MagUnit = 'abs';
-sigma_options.YLim = [-1,1];
+sigma_options.YLim = [-0.2,1.2];
 [sv, freq] = sigma(zpk(T_wz));
+T_wz_inf = norm(T_wz,"inf");
+if T_wz_inf <= gamma
+    disp("The Maximum Singular Value is smaller than Global Performance Level")
+end
+
 figure;
-subplot(3,1,1);
+sigma(zpk(T_wz),sigma_options);
+yline(gamma,'r--');
+yline(T_wz_inf,'b--');
+hold on;
 sigma(zpk(T_wz(1)),sigma_options);
-hold on ;
-yline(gamma,'r--');
-yline(-gamma,'r--');
-title("Singular Value of T_{wz1}(s)")
-grid on;
-subplot(3,1,2);
+hold on;
 sigma(zpk(T_wz(2)),sigma_options);
-yline(gamma,'r--');
 hold on;
-yline(gamma,'r--');
-yline(-gamma,'r--');
-title("Singular Value of T_{wz2}(s)")
-grid on ;
-subplot(3,1,3);
 sigma(zpk(T_wz(3)),sigma_options);
+legend('Global T_{wz}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
+
+%Weight 3 information Re-evluation
+dcgain_3 = db2mag(-60);
+freq_3 = 4;
+hfgain_3 = M_1;
+i = 0;
+while gamma < 1
+    mag_3 = db2mag(-22.64-i);
+    W_3_inv = makeweight(dcgain_3, [freq_3,mag_3], hfgain_3); 
+    W_3 = inv(W_3_inv);
+
+    %P matrix reconstruction
+    P = [W_1 -W_1*zpk_G;
+        0 W_2;
+        W_3*T_d -W_3*zpk_G;
+        1 -zpk_G];
+    [C_e_reeval,T_wz_reeval,gamma_reeval,info_reeval] = hinfsyn(P,n_meas,n_cont,tolerance);
+    gamma_1 = norm(T_wz_reeval(1),'inf');
+    gamma_2 = norm(T_wz_reeval(2),'inf');
+    gamma_3 = norm(T_wz_reeval(3),'inf');
+    gamma = max([gamma_1,gamma_2,gamma_3]);
+    i = i + 0.0001;
+end
+% mag_3 = -22.6409
+figure;
+sigma(zpk(T_wz_reeval),sigma_options);
+yline(gamma_reeval,'r--');
+yline(T_wz_inf_reeval,'b--');
 hold on;
-yline(gamma,'r--');
-yline(-gamma,'r--');
-title("Singular Value of T_{wz3}(s)")
+sigma(zpk(T_wz_reeval(1)),sigma_options);
+hold on;
+sigma(zpk(T_wz_reeval(2)),sigma_options);
+hold on;
+sigma(zpk(T_wz_reeval(3)),sigma_options);
+legend('Global T_{wzr}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
+
 %% Part #3d Feedback controller desgin (hinfstruct case)
 
 %% Part #3eFeedforward controller design
