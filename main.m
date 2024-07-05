@@ -262,6 +262,7 @@ sigma(zpk(T_wz_reeval(2)),sigma_options);
 hold on;
 sigma(zpk(T_wz_reeval(3)),sigma_options);
 legend('Global T_{wzr}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
+title("Re-evaluated Singular Value")
 
 %% Part #3d Feedback controller desgin (hinfstruct case)
 
