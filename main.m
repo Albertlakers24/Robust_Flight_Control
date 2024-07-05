@@ -66,8 +66,7 @@ iopzmap(G_am);
 grid on;
 title('Pole-Zero Map');
 
-%% Part #2 Loop Shaping
-
+%% Part #2a Loop Shaping
 % Damping gain tuning
 clc;
 figure;
@@ -80,6 +79,7 @@ G_cl_q = ss2ss(linsys_cq,T);
 G_cl_q_unsc = G_cl_q('y1','u_unsc');
 zpk_G_cl_q_unsc = zpk(G_cl_q_unsc);
 
+%% Part #2b Loop Shaping
 % Scaling gain Design
 C_sc_gain = 1/ dcgain(G_cl_q_unsc);
 linsys_cq_csc = linearize("ClosedLoop_CqCsc");
@@ -92,20 +92,8 @@ step(G_tf);
 grid on;
 title("Step Reponse of G");
 
+%% Part #2c Loop Shaping
 % Integral gain Design
-C_i_gain = db2mag(20); % momentary unitary value
-linsys_cq_csc_ci = linearize("ClosedLoop_CqCscCi");
-T_cq_csc_ci = [0 0 1 0 0;
-     0 0 0 1 0;
-     1 0 0 0 0;
-     0 1 0 0 0;
-     0 0 0 0 1];
-G_ol_nz = ss2ss(linsys_cq_csc_ci,T_cq_csc_ci);
-zpk_G_ol_nz = zpk(G_ol_nz);
-figure;
-bode(G_ol_nz);
-grid on;
-title("Bode Plot of G_ol_nz");
 C_i_gain = 1; % momentary unitary value
 linsys_cq_csc_ci = linearize("ClosedLoop_CqCscCi");
 T_cq_csc_ci = [0 0 1 0 0;
@@ -210,9 +198,43 @@ den = [1, 2*zeta_d_refm*omega_d_refm, omega_d_refm^2];
 T_d = zpk(tf(num, den));
 
 
-
 %% Part #3c Feedback controller design (hinfsyn case)
-
+clc;
+W_3 = W_1;
+P = [W_1 -W_1*zpk_G;
+    0 W_2;
+    W_3*T_d -W_3*zpk_G;
+    1 -zpk_G];
+n_meas = 1;
+n_cont = 1;
+tolerance = hinfsynOptions('RelTol',1e-6);
+[C_e,T_wz,gamma] = hinfsyn(P,n_meas,n_cont,tolerance);
+sigma_options = sigmaoptions('cstprefs');
+sigma_options.MagUnit = 'abs';
+sigma_options.YLim = [-1,1];
+[sv, freq] = sigma(zpk(T_wz));
+figure;
+subplot(3,1,1);
+sigma(zpk(T_wz(1)),sigma_options);
+hold on ;
+yline(gamma,'r--');
+yline(-gamma,'r--');
+title("Singular Value of T_{wz1}(s)")
+grid on;
+subplot(3,1,2);
+sigma(zpk(T_wz(2)),sigma_options);
+yline(gamma,'r--');
+hold on;
+yline(gamma,'r--');
+yline(-gamma,'r--');
+title("Singular Value of T_{wz2}(s)")
+grid on ;
+subplot(3,1,3);
+sigma(zpk(T_wz(3)),sigma_options);
+hold on;
+yline(gamma,'r--');
+yline(-gamma,'r--');
+title("Singular Value of T_{wz3}(s)")
 %% Part #3d Feedback controller desgin (hinfstruct case)
 
 %% Part #3eFeedforward controller design
