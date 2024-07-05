@@ -46,7 +46,7 @@ save G_m G_m;
 load('G_a.mat');
 load('G_m.mat');
 
-linsys = linearize('Airframenew');
+linsys = linearize('Airframe');
 T = [0 0 1 0;
      0 0 0 1;
      1 0 0 0;
