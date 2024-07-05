@@ -61,14 +61,13 @@ zpk_y1_u_cmd = zpk(G_am_y1_u_cmd);
 zpk_y2_u_cmd = zpk(G_am_y2_u_cmd);
 
 
-figure;
-iopzmap(G_am);
-grid on;
-title('Pole-Zero Map');
+% figure;
+% iopzmap(G_am);
+% grid on;
+% title('Pole-Zero Map');
 
 %% Part #2a Loop Shaping
 % Damping gain tuning
-clc;
 % figure;
 % rlocusplot(-G_am(2,1));
 % title('Root Locus Plot');
@@ -196,7 +195,6 @@ T_d = zpk(tf(num, den));
 
 
 %% Part #3c Feedback controller design (hinfsyn case)
-clc;
 W_3 = W_1;
 P = [W_1 -W_1*zpk_G;
     0 W_2;
@@ -204,8 +202,7 @@ P = [W_1 -W_1*zpk_G;
     1 -zpk_G];
 n_meas = 1;
 n_cont = 1;
-hinf_options = hinfsynOptions;
-hinf_options.RelTol = 1e-6;
+hinf_options = hinfsynOptions("RelTol",1e-6);
 [C_e,T_wz,gamma] = hinfsyn(P,n_meas,n_cont,hinf_options);
 sigma_options = sigmaoptions('cstprefs');
 sigma_options.MagUnit = 'abs';
@@ -243,7 +240,7 @@ while gamma < 1
         0 W_2;
         W_3*T_d -W_3*zpk_G;
         1 -zpk_G];
-    [C_e_reeval,T_wz_reeval,gamma_reeval,info_reeval] = hinfsyn(P,n_meas,n_cont,tolerance);
+    [C_e_reeval,T_wz_reeval,gamma_reeval] = hinfsyn(P,n_meas,n_cont,hinf_options);
     gamma_1 = norm(T_wz_reeval(1),'inf');
     gamma_2 = norm(T_wz_reeval(2),'inf');
     gamma_3 = norm(T_wz_reeval(3),'inf');
@@ -251,6 +248,7 @@ while gamma < 1
     i = i + 0.0001;
 end
 % mag_3 = -22.6409
+T_wz_inf_reeval = norm(T_wz_reeval,"inf");
 figure;
 sigma(zpk(T_wz_reeval),sigma_options);
 yline(gamma_reeval,'r--');
