@@ -194,7 +194,7 @@ den = [1, 2*zeta_d_refm*omega_d_refm, omega_d_refm^2];
 T_d = zpk(tf(num, den));
 
 
-%% Part #3c Feedback controller design (hinfsyn case)
+%% Part #3c.1 Controller design (hinfsyn case)
 W_3 = W_1;
 P = [W_1 -W_1*zpk_G;
     0 W_2;
@@ -213,17 +213,17 @@ if T_wz_inf <= gamma
     disp("The Maximum Singular Value is smaller than Global Performance Level")
 end
 
-figure;
-sigma(zpk(T_wz),sigma_options);
-yline(gamma,'r--');
-yline(T_wz_inf,'b--');
-hold on;
-sigma(zpk(T_wz(1)),sigma_options);
-hold on;
-sigma(zpk(T_wz(2)),sigma_options);
-hold on;
-sigma(zpk(T_wz(3)),sigma_options);
-legend('Global T_{wz}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
+% figure;
+% sigma(zpk(T_wz),sigma_options);
+% yline(gamma,'r--');
+% yline(T_wz_inf,'b--');
+% hold on;
+% sigma(zpk(T_wz(1)),sigma_options);
+% hold on;
+% sigma(zpk(T_wz(2)),sigma_options);
+% hold on;
+% sigma(zpk(T_wz(3)),sigma_options);
+% legend('Global T_{wz}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
 
 %Weight 3 information Re-evluation
 dcgain_3 = db2mag(-60);
@@ -248,20 +248,27 @@ while gamma < 1
     i = i + 0.0001;
 end
 % mag_3 = -22.6409
-T_wz_inf_reeval = norm(T_wz_reeval,"inf");
-figure;
-sigma(zpk(T_wz_reeval),sigma_options);
-yline(gamma_reeval,'r--');
-yline(T_wz_inf_reeval,'b--');
-hold on;
-sigma(zpk(T_wz_reeval(1)),sigma_options);
-hold on;
-sigma(zpk(T_wz_reeval(2)),sigma_options);
-hold on;
-sigma(zpk(T_wz_reeval(3)),sigma_options);
-legend('Global T_{wzr}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
-title("Re-evaluated Singular Value")
+% T_wz_inf_reeval = norm(T_wz_reeval,"inf");
+% figure;
+% sigma(zpk(T_wz_reeval),sigma_options);
+% yline(gamma_reeval,'r--');
+% yline(T_wz_inf_reeval,'b--');
+% hold on;
+% sigma(zpk(T_wz_reeval(1)),sigma_options);
+% hold on;
+% sigma(zpk(T_wz_reeval(2)),sigma_options);
+% hold on;
+% sigma(zpk(T_wz_reeval(3)),sigma_options);
+% legend('Global T_{wzr}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
+% title("Re-evaluated Singular Value")
 
+%% #3c.2 Controller order reduction
+C0_e = C_e_reeval;
+C0_e_minreal = minreal(C0_e);
+[z,p,k] = zpkdata(C0_e_minreal,'v');
+C_e_min_z = z(2:7);
+C_e_min_p = p(2:8);
+zpk_C_e_min = zpk(C_e_min_z,C_e_min_p,k);
 %% Part #3d Feedback controller desgin (hinfstruct case)
 
 %% Part #3eFeedforward controller design
