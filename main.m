@@ -61,17 +61,17 @@ zpk_y1_u_cmd = zpk(G_am_y1_u_cmd);
 zpk_y2_u_cmd = zpk(G_am_y2_u_cmd);
 
 
-% figure;
-% iopzmap(G_am);
-% grid on;
-% title('Pole-Zero Map');
+figure;
+iopzmap(G_am);
+grid on;
+title('Pole-Zero Map');
 
 %% Part #2a Loop Shaping
 % Damping gain tuning
-% figure;
-% rlocusplot(-G_am(2,1));
-% title('Root Locus Plot');
-% sgrid(0.7,[]);
+figure;
+rlocusplot(-G_am(2,1));
+sgrid(0.7,[]);
+title('Root Locus Plot');
 C_q_gain = -0.163; % C_q gain obtained from root locus plot for CL damping of 0.7
 linsys_cq = linearize('ClosedLoop_Cq');
 G_cl_q = ss2ss(linsys_cq,T);
@@ -85,11 +85,10 @@ linsys_cq_csc = linearize("ClosedLoop_CqCsc");
 G = ss2ss(linsys_cq_csc,T);
 G = G('y1','u_p');
 zpk_G = zpk(G);
-G_tf = tf(G);
-% figure;
-% step(G_tf);
-% grid on;
-% title("Step Reponse of G");
+figure;
+step(G);
+grid on;
+title("Step Reponse of G");
 
 %% Part #2c Loop Shaping
 % Integral gain Design
@@ -101,7 +100,7 @@ T_cq_csc_ci = [0 0 1 0 0;
      0 1 0 0 0;
      0 0 0 0 1];
 G_ol_nz = ss2ss(linsys_cq_csc_ci,T_cq_csc_ci);
-% sisotool(G_ol_nz);
+%sisotool(G_ol_nz);
 C_i_gain_phase = 6.2693;
 C_i_gain_settling = 5.4738;
 C_i_gain = min(C_i_gain_settling,C_i_gain_phase);
@@ -193,13 +192,10 @@ num = omega_d_refm^2 * [-1/z_m, 1];
 den = [1, 2*zeta_d_refm*omega_d_refm, omega_d_refm^2];
 T_d = zpk(tf(num, den));
 
-
 %% Part #3c.1 Controller design (hinfsyn case)
+clc;
 W_3 = W_1;
-P = [W_1 -W_1*zpk_G;
-    0 W_2;
-    W_3*T_d -W_3*zpk_G;
-    1 -zpk_G];
+P = linearize("Design");
 n_meas = 1;
 n_cont = 1;
 hinf_options = hinfsynOptions("RelTol",1e-6);
@@ -207,7 +203,6 @@ hinf_options = hinfsynOptions("RelTol",1e-6);
 sigma_options = sigmaoptions('cstprefs');
 sigma_options.MagUnit = 'abs';
 sigma_options.YLim = [-0.2,1.2];
-[sv, freq] = sigma(zpk(T_wz));
 T_wz_inf = norm(T_wz,"inf");
 if T_wz_inf <= gamma
     disp("The Maximum Singular Value is smaller than Global Performance Level")
@@ -225,30 +220,34 @@ end
 % sigma(zpk(T_wz(3)),sigma_options);
 % legend('Global T_{wz}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
 
-%Weight 3 information Re-evluation
+% Weight 3 information Re-evluation
 dcgain_3 = db2mag(-60);
 freq_3 = 4;
 hfgain_3 = M_1;
-i = 0;
-while gamma < 1
-    mag_3 = db2mag(-22.64-i);
-    W_3_inv = makeweight(dcgain_3, [freq_3,mag_3], hfgain_3); 
-    W_3 = inv(W_3_inv);
-
-    %P matrix reconstruction
-    P = [W_1 -W_1*zpk_G;
-        0 W_2;
-        W_3*T_d -W_3*zpk_G;
-        1 -zpk_G];
-    [C_e_reeval,T_wz_reeval,gamma_reeval] = hinfsyn(P,n_meas,n_cont,hinf_options);
-    gamma_1 = norm(T_wz_reeval(1),'inf');
-    gamma_2 = norm(T_wz_reeval(2),'inf');
-    gamma_3 = norm(T_wz_reeval(3),'inf');
-    gamma = max([gamma_1,gamma_2,gamma_3]);
-    i = i + 0.0001;
-end
-% mag_3 = -22.6409
-% T_wz_inf_reeval = norm(T_wz_reeval,"inf");
+% i = 0;
+% while gamma < 1
+%     mag_3 = db2mag(-22.634-i);
+%     i = i + 0.0001;
+%     W_3_inv = makeweight(dcgain_3, [freq_3,mag_3], hfgain_3); 
+%     W_3 = inv(W_3_inv);
+% 
+%     % P matrix reconstruction
+%     P = linearize("Design");
+%     [C_e_reeval,T_wz_reeval,gamma_reeval] = hinfsyn(P,n_meas,n_cont,hinf_options);
+%     gamma_1 = norm(T_wz_reeval(1),'inf');
+%     gamma_2 = norm(T_wz_reeval(2),'inf');
+%     gamma_3 = norm(T_wz_reeval(3),'inf');
+%     gamma = max([gamma_1,gamma_2,gamma_3]);
+% end
+mag_3 = db2mag(-22.63);
+W_3_inv = makeweight(dcgain_3, [freq_3,mag_3], hfgain_3);
+W_3 = inv(W_3_inv);
+P = linearize("Design");
+[C_e_reeval,T_wz_reeval,gamma_reeval] = hinfsyn(P,n_meas,n_cont,hinf_options);
+gamma_1 = norm(T_wz_reeval(1),'inf');
+gamma_2 = norm(T_wz_reeval(2),'inf');
+gamma_3 = norm(T_wz_reeval(3),'inf');
+T_wz_inf_reeval = norm(T_wz_reeval,"inf");
 % figure;
 % sigma(zpk(T_wz_reeval),sigma_options);
 % yline(gamma_reeval,'r--');
@@ -263,12 +262,29 @@ end
 % title("Re-evaluated Singular Value")
 
 %% #3c.2 Controller order reduction
+clc;
 C0_e = C_e_reeval;
-C0_e_minreal = minreal(C0_e);
-[z,p,k] = zpkdata(C0_e_minreal,'v');
+[z,p,k] = zpkdata(C0_e,'v');
 C_e_min_z = z(2:7);
 C_e_min_p = p(2:8);
-zpk_C_e_min = zpk(C_e_min_z,C_e_min_p,k);
+k_min = k * z(1)/ p(1);
+C_e_min = zpk(C_e_min_z,C_e_min_p,k_min);
+
+% figure;
+% bode(C0_e)
+% hold on;
+% bode(C_e_min);
+% legend("Original System", "Minimized System");
+
+C_i_min_p = C_e_min_p(1:6);
+C_i_min = zpk(C_e_min_z, C_i_min_p, k_min);
+C_i_red = balred(C_i_min,2);
+figure;
+pzmap(C_i_min);
+hold on
+pzmap(C_i_red);
+
+
 %% Part #3d Feedback controller desgin (hinfstruct case)
 
 %% Part #3eFeedforward controller design
