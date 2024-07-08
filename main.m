@@ -57,10 +57,10 @@ G_am_y2_u_cmd = G_am('y2', 'u_cmd');
 zpk_y1_u_cmd = zpk(G_am_y1_u_cmd);
 zpk_y2_u_cmd = zpk(G_am_y2_u_cmd);
 
-figure;
-iopzmap(G_am);
-grid on;
-title('Pole-Zero Map');
+% figure;
+% iopzmap(G_am);
+% grid on;
+% title('Pole-Zero Map');
 
 %% Part #2a Loop Shaping
 % % Damping gain tuning
@@ -90,15 +90,15 @@ zpk_G = zpk(G);
 % Integral gain Design
 C_i_gain = 1; % momentary unitary value
 linsys_cq_csc_ci = linearize("ClosedLoop_CqCscCi");
-T_cq_csc_ci = [0 0 1 0 0;
-     0 0 0 1 0;
-     1 0 0 0 0;
+T_cq_csc_ci = [0 0 0 1 0;
+     0 0 0 0 1;
      0 1 0 0 0;
-     0 0 0 0 1];
+     0 0 1 0 0;
+     1 0 0 0 0];
 G_ol_nz = ss2ss(linsys_cq_csc_ci,T_cq_csc_ci);
 %sisotool(G_ol_nz);
 C_i_gain_phase = 6.2693;
-C_i_gain_settling = 5.4738;
+C_i_gain_settling = 5.9043;
 C_i_gain = min(C_i_gain_settling,C_i_gain_phase);
 
 %% Part #3a Weighting filters
@@ -189,15 +189,26 @@ den = [1, 2*zeta_d_refm*omega_d_refm, omega_d_refm^2];
 T_d = zpk(tf(num, den));
 
 %% Part #3c.1 Controller design (hinfsyn case)
+clc;
 W_3 = W_1;
 P = linearize("Design");
+T_P = [0 0 1 0 0 0 0 0 0;
+       0 0 0 1 0 0 0 0 0;
+       1 0 0 0 0 0 0 0 0;
+       0 1 0 0 0 0 0 0 0;
+       0 0 0 0 1 0 0 0 0;
+       0 0 0 0 0 1 0 0 0;
+       0 0 0 0 0 0 1 0 0;
+       0 0 0 0 0 0 0 1 0;
+       0 0 0 0 0 0 0 0 1];
+P = ss2ss(P,T_P);
 n_meas = 1;
 n_cont = 1;
 hinf_options = hinfsynOptions("RelTol",1e-6);
 [C_e,T_wz,gamma] = hinfsyn(P,n_meas,n_cont,hinf_options);
 sigma_options = sigmaoptions('cstprefs');
 sigma_options.MagUnit = 'abs';
-sigma_options.YLim = [-0.2,1.2];
+sigma_options.XLim = [1e-3, 1e4];
 T_wz_inf = norm(T_wz,"inf");
 if T_wz_inf <= gamma
     disp("The Maximum Singular Value is smaller than Global Performance Level")
@@ -221,20 +232,20 @@ freq_3 = 4;
 hfgain_3 = M_1;
 % i = 0;
 % while gamma < 1
-%     mag_3 = db2mag(-22.634-i);
-%     i = i + 0.0001;
+%     mag_3 = db2mag(-22.641-i)
+%     i = i + 0.0001
 %     W_3_inv = makeweight(dcgain_3, [freq_3,mag_3], hfgain_3); 
 %     W_3 = inv(W_3_inv);
 % 
 %     % P matrix reconstruction
-%     P = linearize("Design");
+%     P = ss2ss(linearize("Design"),T_P);
 %     [C_e_reeval,T_wz_reeval,gamma_reeval] = hinfsyn(P,n_meas,n_cont,hinf_options);
 %     gamma_1 = norm(T_wz_reeval(1),'inf');
 %     gamma_2 = norm(T_wz_reeval(2),'inf');
 %     gamma_3 = norm(T_wz_reeval(3),'inf');
 %     gamma = max([gamma_1,gamma_2,gamma_3]);
 % end
-mag_3 = db2mag(-22.63);
+mag_3 = db2mag(-22.6415);
 W_3_inv = makeweight(dcgain_3, [freq_3,mag_3], hfgain_3);
 W_3 = inv(W_3_inv);
 P = linearize("Design");
@@ -253,8 +264,9 @@ T_wz_inf_reeval = norm(T_wz_reeval,"inf");
 % sigma(zpk(T_wz_reeval(2)),sigma_options);
 % hold on;
 % sigma(zpk(T_wz_reeval(3)),sigma_options);
+% grid on;
 % legend('Global T_{wzr}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
-% title("Re-evaluated Singular Value")
+% title("Re-Evaluated Singular Value")
 
 %% #3c.2 Controller order reduction
 C0_e = C_e_reeval;
@@ -279,14 +291,88 @@ C_i_red = balred(C_i_min,2);
 
 %% Part #3c.3 Controller analysis & simulation
 F_f = 1;
-T = linearize("ClosedLoop_Test");
-So = T(1,1);
-Ce_So = T(2,1);
-To = T(3,1);
-Tm = T(4,1);
-Ti = -T(2,2);
-SoG = T(3,2);
-Si = T(5,2);
+T = ss2ss(linearize("ClosedLoop_Test"),T_P);
+So = zpk(T(1,1));
+Ce_So = zpk(T(2,1));
+To = zpk(T(3,1));
+Tm = zpk(T(4,1));
+Ti = zpk(-T(2,2));
+SoG = zpk(T(3,2));
+Si = zpk(T(5,2));
+
+% figure;
+% subplot(2,3,1);
+% sigma(So,sigma_options2,'b');
+% hold on;
+% sigma(Si,sigma_options2,'b');
+% hold on;
+% sigma(W_1_inv,'r');
+% grid on;
+% title("S_{O}, S_{i}, W_{1}^{-1} Singular Value Plot");
+% 
+% subplot(2,3,2);
+% sigma(Ce_So,sigma_options,'b');
+% hold on;
+% sigma(W_2_inv,'r');
+% grid on;
+% title("C_{e}S_{O}, W_{2}^{-1} Singular Value Plot");
+% 
+% subplot(2,3,3);
+% sigma(Tm,sigma_options,'b');
+% hold on;
+% sigma(W_3_inv,'r');
+% grid on;
+% title("T_{m}, W_{3}^{-1} Singular Value Plot");
+% 
+% subplot(2,3,4);
+% sigma(Ti,sigma_options,'b');
+% hold on;
+% sigma(To,'b');
+% grid on;
+% title("T_{i}, T_{O} Singular Value Plot");
+% 
+% subplot(2,3,5);
+% sigma(SoG,sigma_options,'b');
+% grid on;
+% title("S_{O}G Singular Value Plot");
+% 
+% subplot(2,3,6);
+% sigma(C_e,sigma_options,'b');
+% hold on;
+% sigma(C_i_red,sigma_options2,'b');
+% grid on;
+% title("C_{e}, C_{i}_{red} Singular Value Plot");
+
+T_OLT = [0 0 0 0 0 1 0;
+         0 0 0 0 0 0 1;
+         0 0 0 1 0 0 0;
+         0 0 0 0 1 0 0;
+         1 0 0 0 0 0 0;
+         0 1 0 0 0 0 0;
+         0 0 1 0 0 0 0];
+sys_OLT = ss2ss(linearize("OpenLoop_Test"),T_OLT);
+[Gm,Pm,Wcg,Wcp] = margin(sys_OLT);
+Dm = deg2rad(Pm)/Wcp;
+
+% figure;
+% bode(sys_OLT);
+% 
+% figure;
+% grid on;
+% subplot(2,2,1);
+% step(So,'b');
+% 
+% subplot(2,2,2);
+% step(T_d,'r');
+% hold on;
+% step(To,'b');
+% 
+% subplot(2,2,3);
+% step(SoG,'b');
+% 
+% subplot(2,2,4);
+% step(zpk(T(6,1)),'b');
+
 %% Part #3d Feedback controller desgin (hinfstruct case)
 
 %% Part #3eFeedforward controller design
