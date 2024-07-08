@@ -16,8 +16,6 @@ omega_a = 150; % rad/s actuator natural frequency
 zeta_a = 0.7; % actuator damping
 V = M * a; % Airspeed
 
-
-
 % Missile model
 A_m = [-Z_alpha/V 1; M_alpha M_q]; % A matrix missile
 B_m = [-Z_delta/V; M_delta;]; % B Matrix missile
@@ -53,13 +51,11 @@ T = [0 0 1 0;
      0 1 0 0];
 G_am = ss2ss(linsys,T);
 
-
 G_am_y1_u_cmd = G_am('y1', 'u_cmd');
 G_am_y2_u_cmd = G_am('y2', 'u_cmd');
 
 zpk_y1_u_cmd = zpk(G_am_y1_u_cmd);
 zpk_y2_u_cmd = zpk(G_am_y2_u_cmd);
-
 
 figure;
 iopzmap(G_am);
@@ -67,15 +63,15 @@ grid on;
 title('Pole-Zero Map');
 
 %% Part #2a Loop Shaping
-% Damping gain tuning
-figure;
-rlocusplot(-G_am(2,1));
-sgrid(0.7,[]);
-title('Root Locus Plot');
+% % Damping gain tuning
+% figure;
+% rlocusplot(-G_am(2,1));
+% sgrid(0.7,[]);
+% title('Root Locus Plot');
+
 C_q_gain = -0.163; % C_q gain obtained from root locus plot for CL damping of 0.7
 linsys_cq = linearize('ClosedLoop_Cq');
-G_cl_q = ss2ss(linsys_cq,T);
-G_cl_q_unsc = G_cl_q('y1','u_unsc');
+G_cl_q_unsc = ss2ss(linsys_cq,T);
 zpk_G_cl_q_unsc = zpk(G_cl_q_unsc);
 
 %% Part #2b Loop Shaping
@@ -83,12 +79,12 @@ zpk_G_cl_q_unsc = zpk(G_cl_q_unsc);
 C_sc_gain = 1/ dcgain(G_cl_q_unsc);
 linsys_cq_csc = linearize("ClosedLoop_CqCsc");
 G = ss2ss(linsys_cq_csc,T);
-G = G('y1','u_p');
 zpk_G = zpk(G);
-figure;
-step(G);
-grid on;
-title("Step Reponse of G");
+
+% figure;
+% step(G);
+% grid on;
+% title("Step Reponse of G");
 
 %% Part #2c Loop Shaping
 % Integral gain Design
@@ -193,7 +189,6 @@ den = [1, 2*zeta_d_refm*omega_d_refm, omega_d_refm^2];
 T_d = zpk(tf(num, den));
 
 %% Part #3c.1 Controller design (hinfsyn case)
-clc;
 W_3 = W_1;
 P = linearize("Design");
 n_meas = 1;
@@ -262,13 +257,10 @@ T_wz_inf_reeval = norm(T_wz_reeval,"inf");
 % title("Re-evaluated Singular Value")
 
 %% #3c.2 Controller order reduction
-clc;
 C0_e = C_e_reeval;
 [z,p,k] = zpkdata(C0_e,'v');
-C_e_min_z = z(2:7);
-C_e_min_p = p(2:8);
 k_min = k * z(1)/ p(1);
-C_e_min = zpk(C_e_min_z,C_e_min_p,k_min);
+C_e_min = zpk(z(2:7),p(2:8),k_min);
 
 % figure;
 % bode(C0_e)
@@ -276,15 +268,25 @@ C_e_min = zpk(C_e_min_z,C_e_min_p,k_min);
 % bode(C_e_min);
 % legend("Original System", "Minimized System");
 
-C_i_min_p = C_e_min_p(1:6);
-C_i_min = zpk(C_e_min_z, C_i_min_p, k_min);
+C_i_min = zpk(C_e_min.Z{1}, C_e_min.P{1}(1:6), k_min);
 C_i_red = balred(C_i_min,2);
-figure;
-pzmap(C_i_min);
-hold on
-pzmap(C_i_red);
 
+% figure;
+% bode(C_i_min);
+% hold on
+% bode(C_i_red);
+% legend("C_i_min", "C_i_red");
 
+%% Part #3c.3 Controller analysis & simulation
+F_f = 1;
+T = linearize("ClosedLoop_Test");
+So = T(1,1);
+Ce_So = T(2,1);
+To = T(3,1);
+Tm = T(4,1);
+Ti = -T(2,2);
+SoG = T(3,2);
+Si = T(5,2);
 %% Part #3d Feedback controller desgin (hinfstruct case)
 
 %% Part #3eFeedforward controller design
