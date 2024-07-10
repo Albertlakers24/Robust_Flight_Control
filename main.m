@@ -69,14 +69,14 @@ zpk_y2_u_cmd = zpk(G_am_y2_u_cmd);
 % sgrid(0.7,[]);
 % title('Root Locus Plot');
 
-C_q_gain = -0.163; % C_q gain obtained from root locus plot for CL damping of 0.7
+C_q_gain = tf(-0.163); % C_q gain obtained from root locus plot for CL damping of 0.7
 linsys_cq = linearize('ClosedLoop_Cq');
 G_cl_q_unsc = ss2ss(linsys_cq,T);
 zpk_G_cl_q_unsc = zpk(G_cl_q_unsc);
 
 %% Part #2b Loop Shaping
 % Scaling gain Design
-C_sc_gain = 1/ dcgain(G_cl_q_unsc);
+C_sc_gain = tf(1/ dcgain(G_cl_q_unsc));
 linsys_cq_csc = linearize("ClosedLoop_CqCsc");
 G = ss2ss(linsys_cq_csc,T);
 zpk_G = zpk(G);
@@ -88,7 +88,7 @@ zpk_G = zpk(G);
 
 %% Part #2c Loop Shaping
 % Integral gain Design
-C_i_gain = 1; % momentary unitary value
+C_i_gain = tf(1); % momentary unitary value
 linsys_cq_csc_ci = linearize("ClosedLoop_CqCscCi");
 T_cq_csc_ci = [0 0 0 1 0;
      0 0 0 0 1;
@@ -99,7 +99,7 @@ G_ol_nz = ss2ss(linsys_cq_csc_ci,T_cq_csc_ci);
 %sisotool(G_ol_nz);
 C_i_gain_phase = 6.2693;
 C_i_gain_settling = 5.9043;
-C_i_gain = min(C_i_gain_settling,C_i_gain_phase);
+C_i_gain = tf(min(C_i_gain_settling,C_i_gain_phase));
 
 %% Part #3a Weighting filters
 %Weight 1 information
@@ -290,7 +290,7 @@ C_i_red = balred(C_i_min,2);
 % legend("C_i_min", "C_i_red");
 
 %% Part #3c.3 Controller analysis & simulation
-F_f = 1;
+F_f = tf(1);
 T = ss2ss(linearize("ClosedLoop_Test"),T_P);
 So = zpk(T(1,1));
 Ce_So = zpk(T(2,1));
@@ -374,7 +374,59 @@ Dm = deg2rad(Pm)/Wcp;
 % step(zpk(T(6,1)),'b');
 
 %% Part #3d Feedback controller desgin (hinfstruct case)
+s = tf('s');
+C_e_red_D0 = tunableTF('C_e_red_D0',2,2)*1/s;
+hinfstruct_options = hinfstructOptions('UseParallel',true);
+[C_e_red_star, gamma_star, info_star] = hinfstruct(P, C_e_red_D0, hinfstruct_options);
+
+C_e_red_star = tf(C_e_red_star);
+C_i_red_star = C_e_red_star*s;
+
+%Q1 5x2 table 
+data = [27.01, 26.905; 
+        36.32, 28.8; 
+        689.7, 466.7; 
+        62.38, 60.07; 
+        2258, 1526];
+rowNames = {'K', 'n_1', 'n_2', 'd_1', 'd_2'};
+columnNames = {'C_i_red', 'C_i_red_star'};
+Table5x2 = array2table(data, 'VariableNames', columnNames, 'RowNames', rowNames);
+
+%Q2 
+T_wz_D = lft(P,C_e,1,1); %obtaining the weighted closed loop transfer function
+T_wz_D_1 = tf(T_wz_D(1)); % isolating T_wz_D_1
+T_wz_D_2 = tf(T_wz_D(2)); % isolating T_wz_D_2
+T_wz_D_3 = tf(T_wz_D(3)); % isolating T_wz_D_3
+
+gamma_D_1 = norm(T_wz_D_1,'inf'); %computing gamma_D_1
+gamma_D_2 = norm(T_wz_D_2,'inf'); %computing gamma_D_2
+gamma_D_3 = norm(T_wz_D_3,'inf'); %computing gamma_D_3
+
+figure(), hold on  %plotting the singular values of T_wz_D
+sigma(T_wz_D,sigma_options)
+sigma(T_wz_D_1,sigma_options)
+sigma(T_wz_D_2,sigma_options)
+sigma(T_wz_D_3,sigma_options)
+grid on
+legend('T_{wz}','T_{wz(1)}','T_{wz(2)}','T_{wz(3)}')
+
+%plot but in DB
+%figure(), hold on
+%sigma(T_wz_D)
+%sigma(T_wz_D_1)
+%sigma(T_wz_D_2)
+%sigma(T_wz_D_3)
+%grid on
+%legend('T_{wz}','T_{wz(1)}','T_{wz(2)}','T_{wz(3)}')
+
+figure(), hold on %Plotting the bode diagrams for C_i_min C_i_red and C_i_red_star
+bode(C_i_min,'b')
+bode(C_i_red,'g')
+bode(C_i_red_star,'m')
+legend('C-i-min','C-i-red','C-i-red-star')
+
 
 %% Part #3eFeedforward controller design
 
 %% Part #4 Feedback controller redesign (systune case) (Optional)
+
