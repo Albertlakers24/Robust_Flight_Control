@@ -15,6 +15,7 @@ A_delta = 115.0529; % m/s^2/rad control acceleration derivative
 omega_a = 150; % rad/s actuator natural frequency
 zeta_a = 0.7; % actuator damping
 V = M * a; % Airspeed
+s = tf('s');
 
 % Missile model
 A_m = [-Z_alpha/V 1; M_alpha M_q]; % A matrix missile
@@ -299,6 +300,8 @@ Tm = zpk(T(4,1));
 Ti = zpk(-T(2,2));
 SoG = zpk(T(3,2));
 Si = zpk(T(5,2));
+
+C_e_red = C_i_red * 1/s;
 
 % figure;
 % subplot(2,3,1);
