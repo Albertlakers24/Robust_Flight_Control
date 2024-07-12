@@ -381,11 +381,11 @@ Dm = deg2rad(Pm)/Wcp;
 s = tf('s');
 P = linearize('Design');
 C_e_red_D0 = tunableTF('C_e_red_D0',2,2)*1/s;
-hinfstruct_options = hinfstructOptions('UseParallel',true);
+hinfstruct_options = hinfstructOptions('UseParallel',true,'TolGain',10e-6);
 [C_e_red_star, gamma_star, info_star] = hinfstruct(P, C_e_red_D0, hinfstruct_options);
 
 C_e_red_star = zpk(C_e_red_star);
-C_i_red_star = zpk(C_e_red_star*s);
+C_i_red_star = zpk(C_e_red_star)*s;
 
 %Q1 5x2 table 
 data = [27.01, 26.905; 
@@ -433,13 +433,13 @@ legend('C-i-min','C-i-red','C-i-red-star')
 %3D.2
 T_3D = linearize("ClosedLoop_Test_D");
 
-So_3D = zpk(T(1,1));
-Ce_So_3D = zpk(T(2,1));
-To_3D = zpk(T(3,1));
-Tm_3D = zpk(T(4,1));
-Ti_3D = zpk(-T(2,2));
-SoG_3D = zpk(T(3,2));
-Si_3D = zpk(T(5,2));
+So_3D = zpk(T_3D(1,1));
+Ce_So_3D = zpk(T_3D(2,1));
+To_3D = zpk(T_3D(3,1));
+Tm_3D = zpk(T_3D(4,1));
+Ti_3D = zpk(-T_3D(2,2));
+SoG_3D = zpk(T_3D(3,2));
+Si_3D = zpk(T_3D(5,2));
 
 
 figure;
@@ -517,11 +517,38 @@ hold off;
 
 %second exercise
 sys_OLT_D = linearize("OpenLoop_Test_D");
-%[Gm_D,Pm_D,Wcg_D,Wcp_D] = margin(sys_OLT_D);
-%Dm = deg2rad(Pm_D)/Wcp_D;
+[Gm_D,Pm_D,Wcg_D,Wcp_D] = margin(sys_OLT_D);
+Dm = deg2rad(Pm_D)/Wcp_D;
 
 figure;
-bode(sys_OLT_D);
+bode(sys_OLT_D,'m');
+hold on;
+bode(sys_OLT,'b');
+
+figure;
+grid on;
+subplot(2,2,1);
+step(So_3D,'m');
+hold on;
+step(So,'b');
+ 
+subplot(2,2,2);
+step(T_d,'r');
+hold on;
+step(To_3D,'m');
+hold on;
+step(To,'b');
+
+ 
+subplot(2,2,3);
+step(SoG_3D,'m');
+hold on;
+step(SoG,'b');
+ 
+subplot(2,2,4);
+step(zpk(T_3D(6,1)),'m');
+hold on;
+step(zpk(T(6,1)),'b');
 
 
 %% Part #3eFeedforward controller design
