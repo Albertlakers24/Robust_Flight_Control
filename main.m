@@ -377,13 +377,15 @@ Dm = deg2rad(Pm)/Wcp;
 % step(zpk(T(6,1)),'b');
 
 %% Part #3d Feedback controller desgin (hinfstruct case)
+%3D.1
 s = tf('s');
+P = linearize('Design');
 C_e_red_D0 = tunableTF('C_e_red_D0',2,2)*1/s;
 hinfstruct_options = hinfstructOptions('UseParallel',true);
 [C_e_red_star, gamma_star, info_star] = hinfstruct(P, C_e_red_D0, hinfstruct_options);
 
-C_e_red_star = tf(C_e_red_star);
-C_i_red_star = C_e_red_star*s;
+C_e_red_star = zpk(C_e_red_star);
+C_i_red_star = zpk(C_e_red_star*s);
 
 %Q1 5x2 table 
 data = [27.01, 26.905; 
@@ -395,17 +397,17 @@ rowNames = {'K', 'n_1', 'n_2', 'd_1', 'd_2'};
 columnNames = {'C_i_red', 'C_i_red_star'};
 Table5x2 = array2table(data, 'VariableNames', columnNames, 'RowNames', rowNames);
 
-%Q2 
-T_wz_D = lft(P,C_e,1,1); %obtaining the weighted closed loop transfer function
-T_wz_D_1 = tf(T_wz_D(1)); % isolating T_wz_D_1
-T_wz_D_2 = tf(T_wz_D(2)); % isolating T_wz_D_2
-T_wz_D_3 = tf(T_wz_D(3)); % isolating T_wz_D_3
+%Q2
+T_wz_D = lft(P,C_e,1,1);
+T_wz_D_1 = tf(T_wz_D(1));
+T_wz_D_2 = tf(T_wz_D(2));
+T_wz_D_3 = tf(T_wz_D(3));
 
-gamma_D_1 = norm(T_wz_D_1,'inf'); %computing gamma_D_1
-gamma_D_2 = norm(T_wz_D_2,'inf'); %computing gamma_D_2
-gamma_D_3 = norm(T_wz_D_3,'inf'); %computing gamma_D_3
+gamma_D_1 = norm(T_wz_D_1,'inf');
+gamma_D_2 = norm(T_wz_D_2,'inf');
+gamma_D_3 = norm(T_wz_D_3,'inf');
 
-figure(), hold on  %plotting the singular values of T_wz_D
+figure(), hold on
 sigma(T_wz_D,sigma_options)
 sigma(T_wz_D_1,sigma_options)
 sigma(T_wz_D_2,sigma_options)
@@ -422,11 +424,104 @@ legend('T_{wz}','T_{wz(1)}','T_{wz(2)}','T_{wz(3)}')
 %grid on
 %legend('T_{wz}','T_{wz(1)}','T_{wz(2)}','T_{wz(3)}')
 
-figure(), hold on %Plotting the bode diagrams for C_i_min C_i_red and C_i_red_star
+figure(), hold on
 bode(C_i_min,'b')
 bode(C_i_red,'g')
 bode(C_i_red_star,'m')
 legend('C-i-min','C-i-red','C-i-red-star')
+
+%3D.2
+T_3D = linearize("ClosedLoop_Test_D");
+
+So_3D = zpk(T(1,1));
+Ce_So_3D = zpk(T(2,1));
+To_3D = zpk(T(3,1));
+Tm_3D = zpk(T(4,1));
+Ti_3D = zpk(-T(2,2));
+SoG_3D = zpk(T(3,2));
+Si_3D = zpk(T(5,2));
+
+
+figure;
+subplot(2,3,1);
+sigma(So_3D,sigma_options,'m');
+hold on;
+sigma(Si_3D,sigma_options,'m');
+hold on;
+sigma(So,sigma_options,'b');
+hold on;
+sigma(Si,sigma_options,'b');
+hold on;
+sigma(W_1_inv,'r');
+grid on;
+title("Singular Value Plot 3D");
+legend('S_{O,hinfstruct}','S_{i,hinfstruct}','S_{O,hinfsyn}','S_{i,hinfsyn}','W_{1}^{-1}')
+hold off;
+
+subplot(2,3,2);
+sigma(Ce_So_3D,sigma_options,'m');
+hold on;
+sigma(Ce_So,sigma_options,'b');
+hold on;
+sigma(W_2_inv,'r');
+grid on;
+title("Singular Value Plot 3D");
+legend('C_{e}S_{0,hinfstruct}','C_{e}S_{0,hinfsyn}','W_{2}^{-1}')
+hold off;
+
+subplot(2,3,3);
+sigma(Tm_3D,sigma_options,'m');
+hold on;
+sigma(Tm,sigma_options,'b');
+hold on;
+sigma(W_3_inv,'r');
+grid on;
+title("Singular Value Plot 3D");
+legend('T_{m,hinfstruct}','T_{m,hinfsyn}','W_{3}^{-1}')
+hold off;
+
+subplot(2,3,4);
+sigma(Ti_3D,sigma_options,'m');
+hold on;
+sigma(To_3D,sigma_options,'m');
+hold on;
+sigma(Ti,sigma_options,'b');
+hold on;
+sigma(To,sigma_options,'b');
+grid on;
+title("Singular Value Plot 3D");
+legend('T_{i,hinfstruct}','T_{O,hinfstruct}','T_{i,hinfsyn}','T_{o,hinfsyn}','W_{1}^{-1}')
+hold off;
+
+
+subplot(2,3,5);
+sigma(SoG_3D,sigma_options,'m');
+hold on;
+sigma(SoG,sigma_options,'b');
+grid on;
+title("Singular Value Plot 3D");
+legend('S_o_{G,hinfstruct}','S_o_{G,hinfsyn}')
+hold off;
+
+
+subplot(2,3,6);
+sigma(C_e_red_star,sigma_options,'m');
+hold on;
+sigma(C_e_red,sigma_options,'b');
+hold on;
+sigma(C_e,sigma_options,'r');
+grid on;
+title("Singular Value Plot 3D");
+legend('C_e_red_star','C_e_red','C_e')
+hold off;
+
+%second exercise
+sys_OLT_D = linearize("OpenLoop_Test_D");
+%[Gm_D,Pm_D,Wcg_D,Wcp_D] = margin(sys_OLT_D);
+%Dm = deg2rad(Pm_D)/Wcp_D;
+
+figure;
+bode(sys_OLT_D);
 
 
 %% Part #3eFeedforward controller design
