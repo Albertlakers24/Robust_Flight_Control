@@ -551,18 +551,18 @@ step(zpk(T_3D(6,1)),'m');
 hold on;
 step(zpk(T(6,1)),'b');
 
-
 %% Part #3eFeedforward controller design
-clc;
-% To_3D = minreal(To_3D);
-F_f_init = zpk(T_d * To_3D^(-1));
+F_f_init = zpk(T_d * minreal(To_3D)^(-1));
 
-% figure;
-% sigma(F_f_init);
+sigma_options.XLim = [1e-3, 1e4];
+sigma_options.MagUnits = 'abs';
+
+figure;
+sigma(F_f_init,'b');
 
 [z,p,k] = zpkdata(F_f_init,'v');
-z = z(4:8);
-p([3,7]) = [];
+z([1,3,4]) = [];
+p([3]) = [];
 F_f_lf = zpk(z,p,k);
 dcgain_init = dcgain(F_f_init);
 dcgain_lf = dcgain(F_f_lf);
@@ -571,20 +571,22 @@ F_f_lf = zpk(z,p,adjusted_k);
 
 Freq_interval = [0.05, 100];
 opts = balredOptions('StateElimMethod' , 'Truncate', "FreqIntervals", Freq_interval, "ErrorBound", "abs");
-F_f = zpk(balred(F_f_lf,3,opts));
+F_f = zpk(balred(F_f_lf,2,opts));
 
 figure;
 subplot(3,1,1)
-sigma(F_f_init,'b');
+sigma(F_f_init,'b',sigma_options);
 title("Singular Value of F_f_init")
 
 subplot(3,1,2)
-sigma(F_f_lf,"r");
+sigma(F_f_lf,"r",sigma_options);
 title("Singular Value of F_f_lf")
 
 subplot(3,1,3)
-sigma(F_f,"g");
+sigma(F_f,"g",sigma_options);
 title("Singular Value of F_f")
+
+
 
 %% Part #4 Feedback controller redesign (systune case) (Optional)
 
