@@ -187,7 +187,7 @@ omega_d_refm = 18.1900;
 zeta_d_refm = 0.7000;
 num = omega_d_refm^2 * [-1/z_m, 1];
 den = [1, 2*zeta_d_refm*omega_d_refm, omega_d_refm^2];
-T_d = zpk(tf(num, den));
+T_d = zpk(tf(num,den));
 
 %% Part #3c.1 Controller design (hinfsyn case)
 clc;
@@ -292,6 +292,8 @@ C_i_red = balred(C_i_min,2);
 
 %% Part #3c.3 Controller analysis & simulation
 F_f = tf(1);
+C_e_red = C_i_red * 1/s;
+C_i_gain = C_i_red;
 T = ss2ss(linearize("ClosedLoop_Test"),T_P);
 So = zpk(T(1,1));
 Ce_So = zpk(T(2,1));
@@ -301,13 +303,11 @@ Ti = zpk(-T(2,2));
 SoG = zpk(T(3,2));
 Si = zpk(T(5,2));
 
-C_e_red = C_i_red * 1/s;
-
 % figure;
 % subplot(2,3,1);
-% sigma(So,sigma_options2,'b');
+% sigma(So,sigma_options,'b');
 % hold on;
-% sigma(Si,sigma_options2,'b');
+% sigma(Si,sigma_options,'b');
 % hold on;
 % sigma(W_1_inv,'r');
 % grid on;
@@ -342,9 +342,9 @@ C_e_red = C_i_red * 1/s;
 % subplot(2,3,6);
 % sigma(C_e,sigma_options,'b');
 % hold on;
-% sigma(C_i_red,sigma_options2,'b');
+% sigma(C_e_red,sigma_options,'b');
 % grid on;
-% title("C_{e}, C_{i}_{red} Singular Value Plot");
+% title("C_{e}, C_{e}_{red} Singular Value Plot");
 
 T_OLT = [0 0 0 0 0 1 0;
          0 0 0 0 0 0 1;
@@ -431,7 +431,8 @@ bode(C_i_red_star,'m')
 legend('C-i-min','C-i-red','C-i-red-star')
 
 %3D.2
-T_3D = linearize("ClosedLoop_Test_D");
+C_i_gain = C_i_red_star;
+T_3D = linearize("ClosedLoop_Test");
 
 So_3D = zpk(T_3D(1,1));
 Ce_So_3D = zpk(T_3D(2,1));
@@ -516,7 +517,7 @@ legend('C_e_red_star','C_e_red','C_e')
 hold off;
 
 %second exercise
-sys_OLT_D = linearize("OpenLoop_Test_D");
+sys_OLT_D = linearize("OpenLoop_Test");
 [Gm_D,Pm_D,Wcg_D,Wcp_D] = margin(sys_OLT_D);
 Dm = deg2rad(Pm_D)/Wcp_D;
 
@@ -552,6 +553,38 @@ step(zpk(T(6,1)),'b');
 
 
 %% Part #3eFeedforward controller design
+clc;
+% To_3D = minreal(To_3D);
+F_f_init = zpk(T_d * To_3D^(-1));
+
+% figure;
+% sigma(F_f_init);
+
+[z,p,k] = zpkdata(F_f_init,'v');
+z = z(4:8);
+p([3,7]) = [];
+F_f_lf = zpk(z,p,k);
+dcgain_init = dcgain(F_f_init);
+dcgain_lf = dcgain(F_f_lf);
+adjusted_k = k * dcgain_init / dcgain_lf;
+F_f_lf = zpk(z,p,adjusted_k);
+
+Freq_interval = [0.05, 100];
+opts = balredOptions('StateElimMethod' , 'Truncate', "FreqIntervals", Freq_interval, "ErrorBound", "abs");
+F_f = zpk(balred(F_f_lf,3,opts));
+
+figure;
+subplot(3,1,1)
+sigma(F_f_init,'b');
+title("Singular Value of F_f_init")
+
+subplot(3,1,2)
+sigma(F_f_lf,"r");
+title("Singular Value of F_f_lf")
+
+subplot(3,1,3)
+sigma(F_f,"g");
+title("Singular Value of F_f")
 
 %% Part #4 Feedback controller redesign (systune case) (Optional)
 
