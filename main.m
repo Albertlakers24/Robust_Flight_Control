@@ -557,12 +557,12 @@ F_f_init = zpk(T_d * minreal(To_3D)^(-1));
 sigma_options.XLim = [1e-3, 1e4];
 sigma_options.MagUnits = 'abs';
 
-figure;
-sigma(F_f_init,'b');
+% figure;
+% sigma(F_f_init,'b');
 
 [z,p,k] = zpkdata(F_f_init,'v');
 z([1,3,4]) = [];
-p([3]) = [];
+p(3) = [];
 F_f_lf = zpk(z,p,k);
 dcgain_init = dcgain(F_f_init);
 dcgain_lf = dcgain(F_f_lf);
@@ -573,20 +573,64 @@ Freq_interval = [0.05, 100];
 opts = balredOptions('StateElimMethod' , 'Truncate', "FreqIntervals", Freq_interval, "ErrorBound", "abs");
 F_f = zpk(balred(F_f_lf,2,opts));
 
+% figure;
+% subplot(3,1,1)
+% sigma(F_f_init,'b',sigma_options);
+% title("Singular Value of F_f_init")
+% 
+% subplot(3,1,2)
+% sigma(F_f_lf,"r",sigma_options);
+% title("Singular Value of F_f_lf")
+% 
+% subplot(3,1,3)
+% sigma(F_f,"g",sigma_options);
+% title("Singular Value of F_f")
+
+T_3E = linearize("ClosedLoop_Test");
+
+So_3E = zpk(T_3E(1,1));
+Ce_So_3E = zpk(T_3E(2,1));
+To_3E = zpk(T_3E(3,1));
+Tm_3E = zpk(T_3E(4,1));
+Ti_3E = zpk(-T_3E(2,2));
+SoG_3E = zpk(T_3E(3,2));
+Si_3E = zpk(T_3E(5,2));
+
+%Simulation of Actuator response
+t = 0:0.01:1.5;
+y_T = step(T(6,1), t);
+y_T_3D = step(T_3D(6,1),t);
+y_T_3E = step(T_3E(6,1),t);
+
+
+
 figure;
-subplot(3,1,1)
-sigma(F_f_init,'b',sigma_options);
-title("Singular Value of F_f_init")
+subplot(2,2,1);
+hold on;
+sigma(W_3_inv,sigma_options,'r');
+sigma(Tm,sigma_options,'b');
+sigma(Tm_3D,sigma_options,'m');
+sigma(Tm_3E,sigma_options,'g');
+legend("W_{3}^{-1}","T_{m} hinfsyn", "T_{m} hinfstruct", "T_{m} FeedForward");
 
-subplot(3,1,2)
-sigma(F_f_lf,"r",sigma_options);
-title("Singular Value of F_f_lf")
+subplot(2,2,2);
+hold on;
+sigma(C_i_red,sigma_options,'b');
+sigma(C_i_red_star,sigma_options,'m');
+sigma(F_f,sigma_options,'g');
+legend("C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward");
 
-subplot(3,1,3)
-sigma(F_f,"g",sigma_options);
-title("Singular Value of F_f")
+subplot(2,2,3);
+hold on;
+step(To,"b");
+step(To_3D,"g");
+step(To_3E, "y");
+step(T_d,"r");
+legend("C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward","Reference Model");
 
-
-
-%% Part #4 Feedback controller redesign (systune case) (Optional)
-
+subplot(2,2,4);
+hold on;
+plot(t,y_T*180/pi);
+plot(t,y_T_3D*180/pi);
+plot(t,y_T_3E*180/pi);
+legend("C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward");
