@@ -215,17 +215,17 @@ if T_wz_inf <= gamma
     disp("The Maximum Singular Value is smaller than Global Performance Level")
 end
 
-% figure;
-% sigma(zpk(T_wz),sigma_options);
-% yline(gamma,'r--');
-% yline(T_wz_inf,'b--');
-% hold on;
-% sigma(zpk(T_wz(1)),sigma_options);
-% hold on;
-% sigma(zpk(T_wz(2)),sigma_options);
-% hold on;
-% sigma(zpk(T_wz(3)),sigma_options);
-% legend('Global T_{wz}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
+figure;
+sigma(zpk(T_wz),sigma_options);
+yline(gamma,'r--');
+yline(T_wz_inf,'b--');
+hold on;
+sigma(zpk(T_wz(1)),sigma_options);
+hold on;
+sigma(zpk(T_wz(2)),sigma_options);
+hold on;
+sigma(zpk(T_wz(3)),sigma_options);
+legend('Global T_{wz}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
 
 % Weight 3 information Re-evluation
 dcgain_3 = db2mag(-60);
@@ -255,19 +255,19 @@ gamma_1 = norm(T_wz_reeval(1),'inf');
 gamma_2 = norm(T_wz_reeval(2),'inf');
 gamma_3 = norm(T_wz_reeval(3),'inf');
 T_wz_inf_reeval = norm(T_wz_reeval,"inf");
-% figure;
-% sigma(zpk(T_wz_reeval),sigma_options);
-% yline(gamma_reeval,'r--');
-% yline(T_wz_inf_reeval,'b--');
-% hold on;
-% sigma(zpk(T_wz_reeval(1)),sigma_options);
-% hold on;
-% sigma(zpk(T_wz_reeval(2)),sigma_options);
-% hold on;
-% sigma(zpk(T_wz_reeval(3)),sigma_options);
-% grid on;
-% legend('Global T_{wzr}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
-% title("Re-Evaluated Singular Value")
+figure;
+sigma(zpk(T_wz_reeval),sigma_options);
+yline(gamma_reeval,'r--');
+yline(T_wz_inf_reeval,'b--');
+hold on;
+sigma(zpk(T_wz_reeval(1)),sigma_options);
+hold on;
+sigma(zpk(T_wz_reeval(2)),sigma_options);
+hold on;
+sigma(zpk(T_wz_reeval(3)),sigma_options);
+grid on;
+legend('Global T_{wzr}', "Global \gamma","T_{wz} inf","T_{wz1}", "T_{wz2}", "T_{wz3}")
+title("Re-Evaluated Singular Value")
 
 %% #3c.2 Controller order reduction
 C0_e = C_e_reeval;
@@ -276,19 +276,29 @@ k_min = k * z(1)/ p(1);
 C_e_min = zpk(z(2:7),p(2:8),k_min);
 
 % figure;
+% grid on;
 % bode(C0_e)
 % hold on;
 % bode(C_e_min);
-% legend("Original System", "Minimized System");
+% grid on;
+% legend("C0_{e}", "C_{e_{min}}");
 
 C_i_min = zpk(C_e_min.Z{1}, C_e_min.P{1}(1:6), k_min);
 C_i_red = balred(C_i_min,2);
 
-% figure;
-% bode(C_i_min);
-% hold on
-% bode(C_i_red);
-% legend("C_i_min", "C_i_red");
+figure;
+bode(C_i_min);
+hold on
+bode(C_i_red);
+grid on;
+legend("C_{i_{min}}", "C_{i_{red}}");
+
+figure;
+hold on;
+pzmap(C_i_min);
+pzmap(C_i_red);
+grid on;
+legend("C_{i_{min}}", "C_{i_{red}}");
 
 %% Part #3c.3 Controller analysis & simulation
 F_f = tf(1);
@@ -311,6 +321,7 @@ Si = zpk(T(5,2));
 % hold on;
 % sigma(W_1_inv,'r');
 % grid on;
+% legend("S_{O}", "S_{i}","W_{1}^{-1}")
 % title("S_{O}, S_{i}, W_{1}^{-1} Singular Value Plot");
 % 
 % subplot(2,3,2);
@@ -318,6 +329,7 @@ Si = zpk(T(5,2));
 % hold on;
 % sigma(W_2_inv,'r');
 % grid on;
+% legend("C_{e}S_{O}", "W_{2}^{-1}")
 % title("C_{e}S_{O}, W_{2}^{-1} Singular Value Plot");
 % 
 % subplot(2,3,3);
@@ -325,6 +337,7 @@ Si = zpk(T(5,2));
 % hold on;
 % sigma(W_3_inv,'r');
 % grid on;
+% legend("T_{m}", "W_{3}^{-1}")
 % title("T_{m}, W_{3}^{-1} Singular Value Plot");
 % 
 % subplot(2,3,4);
@@ -332,6 +345,7 @@ Si = zpk(T(5,2));
 % hold on;
 % sigma(To,'b');
 % grid on;
+% legend("T_{i}","T_{O}")
 % title("T_{i}, T_{O} Singular Value Plot");
 % 
 % subplot(2,3,5);
@@ -342,8 +356,9 @@ Si = zpk(T(5,2));
 % subplot(2,3,6);
 % sigma(C_e,sigma_options,'b');
 % hold on;
-% sigma(C_e_red,sigma_options,'b');
+% sigma(C_e_red,sigma_options,'r');
 % grid on;
+% legend("C_{e}", "C_{e}_{red}")
 % title("C_{e}, C_{e}_{red} Singular Value Plot");
 
 T_OLT = [0 0 0 0 0 1 0;
@@ -359,23 +374,38 @@ Dm = deg2rad(Pm)/Wcp;
 
 % figure;
 % bode(sys_OLT);
-% 
-% figure;
 % grid on;
-% subplot(2,2,1);
-% step(So,'b');
-% 
-% subplot(2,2,2);
-% step(T_d,'r');
-% hold on;
-% step(To,'b');
-% 
-% subplot(2,2,3);
-% step(SoG,'b');
-% 
-% subplot(2,2,4);
-% step(zpk(T(6,1)),'b');
+t = 0:0.01:0.6;
+T_r_um = step(T(6,1), t);
 
+figure;
+subplot(2,2,1);
+step(So,'b');
+grid on;
+title('Step Response of So');
+
+
+subplot(2,2,2);
+step(T_d,'r');
+hold on;
+step(To,'b');
+grid on;
+legend("T_{d}","T_{O}")
+title('Step Response of T_{d} and T_{O}');
+
+
+subplot(2,2,3);
+step(SoG,'b');
+grid on;
+title('Step Response of S_{O}G');
+
+
+subplot(2,2,4);
+plot(t,T_r_um*180/pi,"b");
+ylabel('Amplitude (degrees)');
+xlabel('Time (seconds)');
+grid on;
+title("Step Response from r to udot_{m}")
 %% Part #3d Feedback controller desgin (hinfstruct case)
 %3D.1
 s = tf('s');
@@ -558,7 +588,8 @@ sigma_options.XLim = [1e-3, 1e4];
 sigma_options.MagUnits = 'abs';
 
 % figure;
-% sigma(F_f_init,'b');
+% sigma(F_f_init,'b',sigma_options);
+% grid on;
 
 [z,p,k] = zpkdata(F_f_init,'v');
 z([1,3,4]) = [];
@@ -572,9 +603,12 @@ F_f_lf = zpk(z,p,adjusted_k);
 Freq_interval = [0.05, 100];
 opts = balredOptions('StateElimMethod' , 'Truncate', "FreqIntervals", Freq_interval, "ErrorBound", "abs");
 F_f = zpk(balred(F_f_lf,2,opts));
+dcgain_ff = dcgain(F_f);
+adjusted_k_ff = F_f.K / dcgain_ff;
+F_f = zpk(F_f.Z{1},F_f.P{1},adjusted_k_ff);
 
 % figure;
-% subplot(3,1,1)
+% subplot(3,1,1);
 % sigma(F_f_init,'b',sigma_options);
 % title("Singular Value of F_f_init")
 % 
@@ -585,6 +619,18 @@ F_f = zpk(balred(F_f_lf,2,opts));
 % subplot(3,1,3)
 % sigma(F_f,"g",sigma_options);
 % title("Singular Value of F_f")
+
+
+% figure;
+% subplot(2,1,1);
+% pzmap(F_f);
+% grid on;
+% title("F_{f} Pole Zero Map");
+% 
+% subplot(2,1,2);
+% pzmap(F_f_init);
+% grid on;
+% title("F_{f,init} Pole Zero Map");
 
 T_3E = linearize("ClosedLoop_Test");
 
@@ -597,40 +643,48 @@ SoG_3E = zpk(T_3E(3,2));
 Si_3E = zpk(T_3E(5,2));
 
 %Simulation of Actuator response
-t = 0:0.01:1.5;
+t = 0:0.01:0.7;
 y_T = step(T(6,1), t);
 y_T_3D = step(T_3D(6,1),t);
 y_T_3E = step(T_3E(6,1),t);
 
 
 
-figure;
-subplot(2,2,1);
-hold on;
-sigma(W_3_inv,sigma_options,'r');
-sigma(Tm,sigma_options,'b');
-sigma(Tm_3D,sigma_options,'m');
-sigma(Tm_3E,sigma_options,'g');
-legend("W_{3}^{-1}","T_{m} hinfsyn", "T_{m} hinfstruct", "T_{m} FeedForward");
-
-subplot(2,2,2);
-hold on;
-sigma(C_i_red,sigma_options,'b');
-sigma(C_i_red_star,sigma_options,'m');
-sigma(F_f,sigma_options,'g');
-legend("C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward");
-
-subplot(2,2,3);
-hold on;
-step(To,"b");
-step(To_3D,"g");
-step(To_3E, "y");
-step(T_d,"r");
-legend("C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward","Reference Model");
-
-subplot(2,2,4);
-hold on;
-plot(t,y_T*180/pi);
-plot(t,y_T_3D*180/pi);
-plot(t,y_T_3E*180/pi);
-legend("C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward");
+% figure;
+% subplot(2,2,1);
+% hold on;
+% sigma(W_3_inv,'r');
+% sigma(Tm,'b');
+% sigma(Tm_3D,'m');
+% sigma(Tm_3E,'g');
+% grid on;
+% legend("W_{3}^{-1}","T_{m} hinfsyn", "T_{m} hinfstruct", "T_{m} FeedForward");
+% 
+% subplot(2,2,3);
+% hold on;
+% yline(C_i_gain_settling,"r");
+% sigma(C_i_red,sigma_options,'b');
+% sigma(C_i_red_star,sigma_options,'m');
+% sigma(F_f,sigma_options,'g');
+% grid on;
+% legend("C_{i} Settling Time","C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward");
+% 
+% subplot(2,2,2);
+% hold on;
+% step(To,"b");
+% step(To_3D,"g");
+% step(To_3E, "y");
+% step(T_d,"r");
+% grid on;
+% legend("C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward","Reference Model");
+% 
+% subplot(2,2,4);
+% hold on;
+% plot(t,y_T*180/pi,"b");
+% plot(t,y_T_3D*180/pi,"m");
+% plot(t,y_T_3E*180/pi,"g");
+% grid on;
+% legend("C_{i} hinfsyn", "C_{i} hinfstruct", "F_{f} FeedForward");
+% ylabel("Degree/sec");
+% xlabel("Time");
+% title("Step Response for Different Acuator Deflection Rate")
