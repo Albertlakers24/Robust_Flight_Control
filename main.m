@@ -52,16 +52,23 @@ T = [0 0 1 0;
      0 1 0 0];
 G_am = ss2ss(linsys,T);
 
-G_am_y1_u_cmd = G_am('y1', 'u_cmd');
-G_am_y2_u_cmd = G_am('y2', 'u_cmd');
+G_am_nz = G_am(1); %channel y1
+G_am_q = G_am(2); %channel y2
 
-zpk_y1_u_cmd = zpk(G_am_y1_u_cmd);
-zpk_y2_u_cmd = zpk(G_am_y2_u_cmd);
 
 % figure;
 % iopzmap(G_am);
 % grid on;
-% title('Pole-Zero Map');
+% title('Pole Zero Map');
+
+%plot step response and pzmap
+%figure,
+%subplot(2,1,1), 
+%step(G_a)
+%hold on
+%subplot(2,1,2),
+%step(G_m)
+
 
 %% Part #2a Loop Shaping
 % % Damping gain tuning
@@ -134,10 +141,19 @@ M2 = denW2(1);
 w2 = denW2(2);
 A2 = w2/numW2(2);
 
-% figure;
-% bode(W_1, W_2)
-% legend('W1','W2');
-% grid on;
+% Plotting inverse gain (frequency)
+%figure;
+%sigma(inv(W_1),'r');
+%grid on;
+%hold on;
+%sigma(inv(W_2),'b');
+%hold off
+%title('Inverse Gain of the Weighting Filters W_1 and W_2');
+%ylabel('Gain');
+%legend('inv(W1)', 'inv(W2)');
+
+
+
 
 %% Part #3b Reference model
 % Required constants
